@@ -1,0 +1,112 @@
+table Vendas
+	lineageTag: tbl-vendas
+
+	measure 'Faturamento Total' = SUM(Vendas[VALOR_TOTAL])
+		formatString: R$#,##0.00
+		lineageTag: m-fat-total
+
+	measure 'Quantidade Vendida' = SUM(Vendas[QUANTIDADE_VENDIDA])
+		formatString: #,##0
+		lineageTag: m-qtd-vendida
+
+	measure 'Ticket Medio' = AVERAGE(Vendas[VALOR_TOTAL])
+		formatString: R$#,##0.00
+		lineageTag: m-ticket-medio
+
+	measure Clientes = DISTINCTCOUNT(Vendas[CLIENTE])
+		formatString: #,##0
+		lineageTag: m-clientes
+
+	column CLIENTE
+		dataType: int64
+		lineageTag: c-cliente
+		summarizeBy: none
+		sourceColumn: CLIENTE
+
+	column IDADE
+		dataType: int64
+		lineageTag: c-idade
+		summarizeBy: none
+		sourceColumn: IDADE
+
+	column ESTADO
+		dataType: string
+		lineageTag: c-estado
+		summarizeBy: none
+		sourceColumn: ESTADO
+
+	column PRODUTO
+		dataType: string
+		lineageTag: c-produto-vendas
+		summarizeBy: none
+		sourceColumn: PRODUTO
+
+	column QUANTIDADE_VENDIDA
+		dataType: int64
+		lineageTag: c-qtd
+		summarizeBy: sum
+		sourceColumn: QUANTIDADE_VENDIDA
+
+	column PRECO_UNITARIO
+		dataType: double
+		lineageTag: c-preco
+		summarizeBy: sum
+		sourceColumn: PRECO_UNITARIO
+
+	column DATA
+		dataType: dateTime
+		formatString: dd/MM/yyyy
+		lineageTag: c-data
+		summarizeBy: none
+		sourceColumn: DATA
+
+	column VALOR_TOTAL
+		dataType: double
+		lineageTag: c-valor-total
+		summarizeBy: sum
+		sourceColumn: VALOR_TOTAL
+
+	column ANO
+		dataType: int64
+		lineageTag: c-ano
+		summarizeBy: none
+		sourceColumn: ANO
+
+	column MES
+		dataType: int64
+		lineageTag: c-mes
+		summarizeBy: none
+		sourceColumn: MES
+
+	column ANO_MES
+		dataType: string
+		lineageTag: c-ano-mes
+		summarizeBy: none
+		sourceColumn: ANO_MES
+
+	column FAIXA_ETARIA
+		dataType: string
+		lineageTag: c-faixa
+		summarizeBy: none
+		sourceColumn: FAIXA_ETARIA
+
+	partition Vendas = m
+		mode: import
+		source =
+				let
+					Source = Excel.Workbook(Web.Contents("https://raw.githubusercontent.com/SilasTristoni/desafio_data_analytics_manchester/main/Base-Dados-Desafio-500k.xlsx"), null, true),
+					VendasSheet = Source{[Item="VENDAS",Kind="Sheet"]}[Data],
+					Cabecalhos = Table.PromoteHeaders(VendasSheet, [PromoteAllScalars=true]),
+					Renomeado = Table.RenameColumns(Cabecalhos, {{"PREÇO_UNITARIO","PRECO_UNITARIO"}}),
+					Tipos = Table.TransformColumnTypes(Renomeado, {{"CLIENTE", Int64.Type},{"IDADE", Int64.Type},{"ESTADO", type text},{"PRODUTO", type text},{"QUANTIDADE_VENDIDA", Int64.Type},{"PRECO_UNITARIO", type number},{"DATA", type date}}),
+					SemDuplicados = Table.Distinct(Tipos),
+					Validos = Table.SelectRows(SemDuplicados, each [CLIENTE] <> null and [IDADE] <> null and [ESTADO] <> null and [PRODUTO] <> null and [QUANTIDADE_VENDIDA] <> null and [PRECO_UNITARIO] <> null and [DATA] <> null and [IDADE] >= 18 and [IDADE] <= 80 and [QUANTIDADE_VENDIDA] > 0 and [PRECO_UNITARIO] > 0),
+					Texto = Table.TransformColumns(Validos, {{"ESTADO", each Text.Upper(Text.Trim(Text.From(_))), type text},{"PRODUTO", each Text.Upper(Text.Trim(Text.From(_))), type text}}),
+					Valor = Table.AddColumn(Texto, "VALOR_TOTAL", each Number.From([QUANTIDADE_VENDIDA]) * Number.From([PRECO_UNITARIO]), type number),
+					Ano = Table.AddColumn(Valor, "ANO", each Date.Year([DATA]), Int64.Type),
+					Mes = Table.AddColumn(Ano, "MES", each Date.Month([DATA]), Int64.Type),
+					AnoMes = Table.AddColumn(Mes, "ANO_MES", each Date.ToText([DATA], "yyyy-MM"), type text),
+					Faixa = Table.AddColumn(AnoMes, "FAIXA_ETARIA", each if [IDADE] <= 24 then "18-24" else if [IDADE] <= 34 then "25-34" else if [IDADE] <= 44 then "35-44" else if [IDADE] <= 54 then "45-54" else if [IDADE] <= 64 then "55-64" else "65+", type text)
+				in
+					Faixa
+

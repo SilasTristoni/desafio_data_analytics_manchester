@@ -1,0 +1,4 @@
+relationship produto_rel
+	fromColumn: Vendas.PRODUTO
+	toColumn: Produtos.PRODUTO
+

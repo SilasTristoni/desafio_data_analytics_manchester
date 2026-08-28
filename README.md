@@ -9,7 +9,7 @@ O objetivo foi analisar uma base de vendas utilizando Python, SQL e Power BI.
 - `Base-Dados-Desafio-500k.xlsx`: base original
 - `notebooks/analise_vendas.ipynb`: tratamento e análises
 - `sql/analises.sql`: consultas SQL
-- `vendas_tratadas.csv`: base depois do tratamento
+- `powerbi/dashboard_vendas.pbip`: projeto do dashboard no Power BI
 
 ## O que foi analisado
 
@@ -31,6 +31,12 @@ São Paulo possui uma participação maior em quantidade de registros e faturame
 Algumas categorias possuem valores próximos de faturamento, com destaque para Jardinagem e Mangueiras.
 
 Na análise por mês existem variações, mas não foi identificada uma sazonalidade muito forte somente com essa análise.
+
+## Power BI
+
+O dashboard possui indicadores de faturamento, quantidade vendida, ticket médio e clientes, além de gráficos por categoria, estado, período e faixa etária.
+
+O projeto está salvo no formato PBIP e utiliza a base Excel deste próprio repositório como fonte de dados.
 
 ## Tecnologias
 

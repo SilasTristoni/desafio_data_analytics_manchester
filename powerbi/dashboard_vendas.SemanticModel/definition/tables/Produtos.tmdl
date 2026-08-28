@@ -1,0 +1,30 @@
+table Produtos
+	lineageTag: tbl-produtos
+
+	column PRODUTO
+		dataType: string
+		isKey
+		lineageTag: c-produto-key
+		summarizeBy: none
+		sourceColumn: PRODUTO
+
+	column CATEGORIA
+		dataType: string
+		lineageTag: c-categoria
+		summarizeBy: none
+		sourceColumn: CATEGORIA
+
+	partition Produtos = m
+		mode: import
+		source =
+				let
+					Source = Excel.Workbook(Web.Contents("https://raw.githubusercontent.com/SilasTristoni/desafio_data_analytics_manchester/main/Base-Dados-Desafio-500k.xlsx"), null, true),
+					ProdutosSheet = Source{[Item="PRODUTOS",Kind="Sheet"]}[Data],
+					Cabecalhos = Table.PromoteHeaders(ProdutosSheet, [PromoteAllScalars=true]),
+					Tipos = Table.TransformColumnTypes(Cabecalhos, {{"PRODUTO", type text},{"CATEGORIA", type text}}),
+					Validos = Table.SelectRows(Tipos, each [PRODUTO] <> null and [CATEGORIA] <> null),
+					Texto = Table.TransformColumns(Validos, {{"PRODUTO", each Text.Upper(Text.Trim(Text.From(_))), type text},{"CATEGORIA", each Text.Upper(Text.Trim(Text.From(_))), type text}}),
+					Distintos = Table.Distinct(Texto, {"PRODUTO"})
+				in
+					Distintos
+
